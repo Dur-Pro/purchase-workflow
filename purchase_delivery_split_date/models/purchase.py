@@ -111,7 +111,12 @@ class PurchaseOrder(models.Model):
             )
             pickings = moves.mapped("picking_id")
             pickings_by_date = {}
+
             for pick in pickings:
+                # If an existing picking has no items aligned with its scheduled date, take the date from the first item
+                # This avoids a key error when accessing pickings_by_date[date_key] later
+                if not any(line.purchase_line_id.date_planned.date() == pick.scheduled_date.date() for line in pick.move_lines):
+                    pick.scheduled_date = pick.move_lines[0].purchase_line_id.date_planned
                 pickings_by_date[pick.scheduled_date.date()] = pick
 
             order_lines = moves.mapped("purchase_line_id")
